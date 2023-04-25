@@ -1,4 +1,4 @@
-unit int128impl;
+unit Int128d;
 
 interface
 
@@ -111,6 +111,10 @@ type
       5: (dc: packed array[0..1] of UInt64);
   end;
 
+const
+  Ten: UInt128 = (dc0: $A; dc1: 0);
+  Neg1: Int128 = (dc0: 0; dc1: $8000000000000000);
+
 implementation
 
 uses System.SysConst;
@@ -192,11 +196,9 @@ begin
 end;
 
 class operator UInt128.Add(a, b: UInt128): UInt128;
-var qw: UInt64;
-    c0, c1, c2, c3: Boolean;
   procedure inc3;
   begin
-    if Result.c3 = $FFFFFFFF then
+    if Result.c3 = High(Result.c3) then
     begin
       raise EIntOverflow.Create(SIntOverflow);
     end else
@@ -205,7 +207,7 @@ var qw: UInt64;
 
   procedure inc2;
   begin
-    if Result.c2 = $ffffffff then
+    if Result.c2 = High(Result.c2) then
     begin
       Result.c2 := 0;
       inc3;
@@ -215,7 +217,7 @@ var qw: UInt64;
 
   procedure inc1;
   begin
-    if Result.c1 = $ffffffff then
+    if Result.c1 = High(Result.c1) then
     begin
       Result.c1 := 0;
       inc2;
@@ -224,37 +226,35 @@ var qw: UInt64;
   end;
 
 begin
-  qw := UInt64(a.c0) + UInt64(b.c0);
-  Result.c0 := qw and $ffffffff;
-  c0 := (qw shr 32) = 1;
+  var qw: UInt64 := UInt64(a.c0) + UInt64(b.c0);
+  Result.c0 := qw and High(Result.c0);
+  var c0 := (qw shr 32) = 1;
   qw := UInt64(a.c1) + UInt64(b.c1);
-  Result.c1 := qw and $ffffffff;
-  c1 := (qw shr 32) = 1;
+  Result.c1 := qw and High(Result.c1);
+  var c1 := (qw shr 32) = 1;
   qw := UInt64(a.c2) + UInt64(b.c2);
-  Result.c2 := qw and $ffffffff;
-  c2 := (qw shr 32) = 1;
+  Result.c2 := qw and High(Result.c2);
+  var c2 := (qw shr 32) = 1;
   qw := UInt64(a.c3) + UInt64(b.c3);
-  Result.c3 := qw and $ffffffff;
-  c3 := (qw shr 32) = 1;
+  Result.c3 := qw and High(Result.c3);
+  var c3 := (qw shr 32) = 1;
   if c0 then inc1;
   if c1 then inc2;
   if c2 then inc3;
   if c3 then raise EIntOverflow.Create(SIntOverflow);
 end;
 
-{$OVERFLOWCHECKS OFF}
 class operator UInt128.Subtract(a, b: UInt128): UInt128;
 begin
-  if b > a then raise EIntOverflow.Create(SIntOverflow)
+  if b > a then
+    raise EIntOverflow.Create(SIntOverflow)
   else begin
     Result.dc0 := a.dc0 - b.dc0;
     Result.dc1 := a.dc1 - b.dc1;
 
     if Result.dc0 > a.dc0 then Dec(Result.dc1);
-
   end;
 end;
-{$OVERFLOWCHECKS ON}
 
 class operator UInt128.Modulus(a, b: UInt128): UInt128;
 var temp: UInt128;
@@ -278,21 +278,21 @@ begin
   over := false;
 
   qw := UInt64(a.c0) * UInt64(b.c0);
-  Result.c0 := qw and $FFFFFFFF;
+  Result.c0 := qw and High(Result.c0);
   Result.c1 := qw shr 32;
   Result.c2 := 0;
   Result.c3 := 0;
 
   qw := UInt64(a.c0) * UInt64(b.c1);
   v.c0 := 0;
-  v.c1 := qw and $FFFFFFFF;
+  v.c1 := qw and High(v.c1);
   v.c2 := qw shr 32;
   v.c3 := 0;
   Result := Result + v;
 
   qw := UInt64(a.c1) * UInt64(b.c0);
   v.c0 := 0;
-  v.c1 := qw and $FFFFFFFF;
+  v.c1 := qw and High(v.c1);
   v.c2 := qw shr 32;
   v.c3 := 0;
   Result := Result + v;
@@ -300,21 +300,21 @@ begin
   qw := UInt64(a.c0) * UInt64(b.c2);
   v.c0 := 0;
   v.c1 := 0;
-  v.c2 := qw and $FFFFFFFF;
+  v.c2 := qw and High(v.c2);
   v.c3 := qw shr 32;
   Result := Result + v;
 
   qw := UInt64(a.c1) * UInt64(b.c1);
   v.c0 := 0;
   v.c1 := 0;
-  v.c2 := qw and $FFFFFFFF;
+  v.c2 := qw and High(v.c2);
   v.c3 := qw shr 32;
   Result := Result + v;
 
   qw := UInt64(a.c2) * UInt64(b.c0);
   v.c0 := 0;
   v.c1 := 0;
-  v.c2 := qw and $FFFFFFFF;
+  v.c2 := qw and High(v.c2);
   v.c3 := qw shr 32;
   Result := Result + v;
 
@@ -322,7 +322,7 @@ begin
   v.c0 := 0;
   v.c1 := 0;
   v.c2 := 0;
-  v.c3 := qw and $FFFFFFFF;
+  v.c3 := qw and High(v.c3);
   if qw shr 32 <> 0 then over := True;
   Result := Result + v;
 
@@ -330,7 +330,7 @@ begin
   v.c0 := 0;
   v.c1 := 0;
   v.c2 := 0;
-  v.c3 := qw and $FFFFFFFF;
+  v.c3 := qw and High(v.c3);
   if qw shr 32 <> 0 then over := True;
   Result := Result + v;
 
@@ -338,7 +338,7 @@ begin
   v.c0 := 0;
   v.c1 := 0;
   v.c2 := 0;
-  v.c3 := qw and $FFFFFFFF;
+  v.c3 := qw and High(v.c3);
   if qw shr 32 <> 0 then over := True;
   Result := Result + v;
 
@@ -346,7 +346,7 @@ begin
   v.c0 := 0;
   v.c1 := 0;
   v.c2 := 0;
-  v.c3 := qw and $FFFFFFFF;
+  v.c3 := qw and High(v.c3);
   if qw shr 32 <> 0 then over := True;
   Result := Result + v;
 
@@ -387,28 +387,24 @@ end;
 class operator UInt128.Implicit(a: string): UInt128;
 var
   i: Integer;
-  ten: UInt128;
 begin
   Result := 0;
-  ten := 10;
-  for i := 1 to length(a) do begin
+  for i := 1 to a.Length do begin
     if CharInSet(a[i], ['0'..'9']) then begin
-      Result := Result * ten;
+      Result := Result * Ten;
       Result := Result + UInt32(Ord(a[i]) - Ord('0'));
-    end
-    else
+    end else
       raise EConvertError.Create(a + ' is not a valid Int128 value.');
   end;
 
-  if (length(a) > 1) and (Result = 0) then
+  if (a.Length > 1) and (Result = 0) then
      raise EIntOverflow.Create(SIntOverflow);
 end;
 
 class operator UInt128.Implicit(a: UInt128): string;
-var Ten, digit: UInt128;
+var digit: UInt128;
 begin
   Result := '';
-  Ten := 10;
 
   while a <> 0 do begin
     DivModU128(a, Ten, a, digit);
@@ -445,7 +441,7 @@ end;
 
 class operator UInt128.Explicit(a: UInt128): UInt64;
 begin
-  if a.dc1 > 0 then raise EConvertError.Create(string(a) + ' is not a valid UInt64 value.');
+  if a.dc1 > 0 then raise EConvertError.Create(a + ' is not a valid UInt64 value.');
   Result := a.dc0;
 end;
 
@@ -456,8 +452,7 @@ end;
 
 class operator UInt128.NotEqual(a: UInt128; b: UInt128): Boolean;
 begin
-  Result := true;
-  if (a.dc0 = b.dc0) and (a.dc1 = b.dc1) then Result := false;
+  Result := (a.dc0 <> b.dc0) or (a.dc1 <> b.dc1);
 end;
 
 class operator UInt128.GreaterThan(a, b: UInt128): Boolean;
@@ -528,12 +523,17 @@ begin
   sub := Value2;
   Remainder := Value1;
   DivResult := 0;
-  neg := false;
 
-  if (sub.c3 and $80000000 <> 0) xor (Remainder.c3 and $80000000 <> 0)
-  then neg:= true;
+  neg := (sub.c3 and $80000000 <> 0) xor (Remainder.c3 and $80000000 <> 0);
+
   if (sub.c3 and $80000000 <> 0) then sub := -sub;
-  if (Remainder.c3 and $80000000 <> 0) then Remainder := -Remainder;
+
+  var bIsNeg1 := Remainder = Neg1;
+
+  if bIsNeg1 then
+    Remainder := Remainder.Invert
+  else if (Remainder.c3 and $80000000 <> 0) then
+    Remainder := -Remainder;
 
   // if divisor = 1
   if sub = 1 then begin
@@ -567,23 +567,31 @@ begin
       sub := sub shr 1;
       dec(curShift);
     end else
-      break;
+      Break;
   end;
 
   if neg then DivResult := -DivResult;
-  if (Value1 < 0) then Remainder := -Remainder;
 
+  if bIsNeg1 then Inc(Remainder);
 end;
 
 class procedure Int128.Inc128(var Value: Int128);
 begin
-  if Value.c0 <> $ffffffff then Inc(Value.c0) else begin
+  if Value.c0 <> High(Value.c0) then
+    Inc(Value.c0)
+  else begin
     Value.c0 := 0;
-    if Value.c1 <> $ffffffff then Inc(Value.c1) else begin
+    if Value.c1 <> High(Value.c1) then
+      Inc(Value.c1)
+    else begin
       Value.c1 := 0;
-      if Value.c2 <> $ffffffff then Inc(Value.c2) else begin
+      if Value.c2 <> High(Value.c2) then
+        Inc(Value.c2)
+      else begin
         Value.c2 := 0;
-        if Value.c3 <> $ffffffff then Inc(Value.c3) else
+        if Value.c3 <> High(Value.c3) then
+          Inc(Value.c3)
+        else
           Value.c3 := 0;
       end;
     end;
@@ -592,46 +600,41 @@ end;
 
 class procedure Int128.SetBit128(var Value: Int128; numBit: integer);
 begin
-  Value.c[numBit shr 5] := Value.c[numBit shr 5] or longword(1 shl (numBit and 31));
+  Value.c[numBit shr 5] := Value.c[numBit shr 5] or UInt32(1 shl (numBit and 31));
 end;
 
-class function Int128.StrToInt128(Value: string): Int128;
-var
-  i: Integer;
-  ten: Int128;
-  neg: Boolean;
+class function Int128.StrToInt128(Value: String): Int128;
 begin
-
-  if Value = '-170141183460469231731687303715884105728' then begin
-     Result.dc1 := $8000000000000000;
-     Result.dc0 := 0;
-     exit;
-  end;
+  if Value.Length = 0 then Exit(0);
 
   Result := 0;
-  ten := 10;
-  neg := False;
+  var IsNeg := Value[1] = '-';
+  var i := 1;
+  if IsNeg then i := 2;
 
-  for i := 1 to length(Value) do begin
-    if CharInSet(Value[i], ['0'..'9']) then begin
-      Result := Result * ten;
-      Result := Result + Int32(Ord(Value[i]) - Ord('0'));
-    end else if (i = 1) and (Value[i] = '-') then
-      neg := True
+  for i := i to Value.Length - 1 do begin
+    if CharInSet(Value[i], ['0'..'9']) then
+      Result := Result * Ten + (Ord(Value[i]) - Ord('0'))
     else
       raise EConvertError.Create(Value + ' is not a valid Int128 value.');
   end;
-  if neg then Result := -Result;
 
-  if (length(Value) > 1) and (Result = 0) then raise EIntOverflow.Create(SIntOverflow);
-
-
+  i := Value.Length;
+  if CharInSet(Value[i], ['0'..'9']) then begin
+    Result := Result * Ten;
+    var iDigit := Ord(Value[i]) - Ord('0');
+    if IsNeg then
+      Result := -Result - iDigit
+    else
+      Result := Result + iDigit;
+  end else
+    raise EConvertError.Create(Value + ' is not a valid Int128 value.');
 end;
 
 function Int128.Invert: Int128;
 begin
-  Result.dc0 := Self.dc0 xor $FFFFFFFFFFFFFFFF;
-  Result.dc1 := Self.dc1 xor $FFFFFFFFFFFFFFFF;
+  Result.dc0 := Self.dc0 xor High(Self.dc0);
+  Result.dc1 := Self.dc1 xor High(Self.dc1);
 end;
 
 class operator Int128.Equal(a, b: Int128): Boolean;
@@ -653,7 +656,7 @@ var qw: UInt64;
     c0, c1, c2: Boolean;
   procedure inc3;
   begin
-    if Result.c3 = $ffffffff then
+    if Result.c3 = High(Result.c3) then
     begin
       Result.c3 := 0;
     end
@@ -663,7 +666,7 @@ var qw: UInt64;
 
   procedure inc2;
   begin
-    if Result.c2 = $ffffffff then
+    if Result.c2 = High(Result.c2) then
     begin
       Result.c2 := 0;
       inc3;
@@ -673,7 +676,7 @@ var qw: UInt64;
 
   procedure inc1;
   begin
-    if Result.c1 = $ffffffff then
+    if Result.c1 = High(Result.c1) then
     begin
       Result.c1 := 0;
       inc2;
@@ -682,32 +685,30 @@ var qw: UInt64;
   end;
 
 begin
-
   qw := UInt64(a.c0) + UInt64(b.c0);
-  Result.c0 := qw and $ffffffff;
+  Result.c0 := qw and High(Result.c0);
   c0 := (qw shr 32) = 1;
 
   qw := UInt64(a.c1) + UInt64(b.c1);
-  Result.c1 := qw and $ffffffff;
+  Result.c1 := qw and High(Result.c1);
   c1 := (qw shr 32) = 1;
 
   qw := UInt64(a.c2) + UInt64(b.c2);
-  Result.c2 := qw and $ffffffff;
+  Result.c2 := qw and High(Result.c2);
   c2 := (qw shr 32) = 1;
 
   qw := UInt64(a.c3) + UInt64(b.c3);
-  Result.c3 := qw and $ffffffff;
+  Result.c3 := qw and High(Result.c3);
 
   if c0 then inc1;
   if c1 then inc2;
   if c2 then inc3;
 
-  if ((Result < 0) and (a > 0) and (b > 0)) then
+  if (Result < 0) and (a > 0) and (b > 0) then
      raise EIntOverflow.Create(SIntOverflow);
 
-  if ((Result > 0) and (a < 0) and (b < 0)) then
+  if (Result > 0) and (a < 0) and (b < 0) then
      raise EIntOverflow.Create(SIntOverflow);
-
 end;
 
 class operator Int128.GreaterThanOrEqual(a, b: Int128): Boolean;
@@ -772,18 +773,10 @@ begin
 end;
 
 class operator Int128.Implicit(Value: Int128): string;
-var digit, curValue, nextValue, ten: Int128;
+var digit, curValue, nextValue: Int128;
     Neg: Boolean;
 begin
-  if (Value.c3 = $80000000) and (Value.c2 = 0)
-  and (Value.c1 = 0) and (Value.c0 = 0) then
-  begin
-    Result := '-170141183460469231731687303715884105728';
-    Exit;
-  end;
-
   Result := '';
-  ten := 10;
   if Value.b[15] shr 7 = 1 then begin
     curValue := UInt128(Value.Invert()) + 1;
     Neg := True;
@@ -793,7 +786,7 @@ begin
   end;
 
   while CurValue <> 0 do begin
-    DivMod128(CurValue, ten, nextValue, digit);
+    DivMod128(CurValue, Ten, nextValue, digit);
     Result := Chr(Ord('0') + digit.c0) + Result;
     curValue := NextValue;
   end;
@@ -819,7 +812,6 @@ begin
     Result.dc0 := Value.dc0 shl Shift;
   end else if Shift = 0 then Result := Value
   else if Shift < 0 then Result := Value shl (128 - (Abs(Shift) mod 128));
-
 end;
 
 class operator Int128.LeftShift(Value, Shift: Int128): Int128;
@@ -861,21 +853,21 @@ begin
   if b < 0 then b := -b;
 
   qw := UInt64(a.c0) * UInt64(b.c0);
-  Result.c0 := qw and $ffffffff;
+  Result.c0 := qw and High(Result.c0);
   Result.c1 := qw shr 32;
   Result.c2 := 0;
   Result.c3 := 0;
 
   qw := UInt64(a.c0) * UInt64(b.c1);
   v.c0 := 0;
-  v.c1 := qw and $ffffffff;
+  v.c1 := qw and High(v.c1);
   v.c2 := qw shr 32;
   v.c3 := 0;
   Result := Result + v;
 
   qw := UInt64(a.c1) * UInt64(b.c0);
   v.c0 := 0;
-  v.c1 := qw and $ffffffff;
+  v.c1 := qw and High(v.c1);
   v.c2 := qw shr 32;
   v.c3 := 0;
   Result := Result + v;
@@ -883,21 +875,21 @@ begin
   qw := UInt64(a.c0) * UInt64(b.c2);
   v.c0 := 0;
   v.c1 := 0;
-  v.c2 := qw and $ffffffff;
+  v.c2 := qw and High(v.c2);
   v.c3 := qw shr 32;
   Result := Result + v;
 
   qw := UInt64(a.c1) * UInt64(b.c1);
   v.c0 := 0;
   v.c1 := 0;
-  v.c2 := qw and $ffffffff;
+  v.c2 := qw and High(v.c2);
   v.c3 := qw shr 32;
   Result := Result + v;
 
   qw := UInt64(a.c2) * UInt64(b.c0);
   v.c0 := 0;
   v.c1 := 0;
-  v.c2 := qw and $ffffffff;
+  v.c2 := qw and High(v.c2);
   v.c3 := qw shr 32;
   Result := Result + v;
 
@@ -905,7 +897,7 @@ begin
   v.c0 := 0;
   v.c1 := 0;
   v.c2 := 0;
-  v.c3 := qw and $ffffffff;
+  v.c3 := qw and High(v.c3);
   if qw shr 32 <> 0 then over := True;
   Result := Result + v;
 
@@ -913,7 +905,7 @@ begin
   v.c0 := 0;
   v.c1 := 0;
   v.c2 := 0;
-  v.c3 := qw and $ffffffff;
+  v.c3 := qw and High(v.c3);
   if qw shr 32 <> 0 then over := True;
   Result := Result + v;
 
@@ -921,7 +913,7 @@ begin
   v.c0 := 0;
   v.c1 := 0;
   v.c2 := 0;
-  v.c3 := qw and $ffffffff;
+  v.c3 := qw and High(v.c3);
   if qw shr 32 <> 0 then over := True;
   Result := Result + v;
 
@@ -929,7 +921,7 @@ begin
   v.c0 := 0;
   v.c1 := 0;
   v.c2 := 0;
-  v.c3 := qw and $ffffffff;
+  v.c3 := qw and High(v.c3);
   if qw shr 32 <> 0 then over := True;
   Result := Result + v;
 
@@ -988,6 +980,7 @@ class operator Int128.Modulus(a: Int128; b: Int128): Int128;
 var temp: Int128;
 begin
   DivMod128(a, b, temp, Result);
+  if a < 0 then Result := -Result;
 end;
 
 class operator Int128.BitwiseOr(a, b: Int128): Int128;
@@ -1009,15 +1002,9 @@ begin
 end;
 
 class operator Int128.Implicit(Value: UInt128): Int128;
-var temp: UInt64;
-    temp2: UInt128;
 begin
-  temp := UInt64(Value shr 64);
-  Result.dc1 := temp;
-
-  temp2 := $FFFFFFFFFFFFFFFF;
-  temp := UInt64(Value and temp2);
-  Result.dc0 := temp;
+  Result.dc0 := UInt64(Value and High(UInt64));
+  Result.dc1 := UInt64(Value shr 64);
 end;
 
 class operator Int128.Implicit(Value: Int128): UInt128;
